@@ -54,7 +54,7 @@ data {
 }
 
 parameters {
-  vector <lower=0> [q] mu;
+  vector [q] mu;
   vector <lower=0> [q] delta;
   simplex[n] tphi;
   real <lower=0> nu[n];

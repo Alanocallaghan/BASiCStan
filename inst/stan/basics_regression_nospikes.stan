@@ -40,9 +40,12 @@ data {
   vector [n] aphi;
   vector[q] mu_mu;
   real smu;
+  real mu0; // fixed mean log expression
   real astwo;
   real bstwo;
   int l;
+  int refgene;
+  int notrefgene [q - 1];
   vector [n] size_factors;
   vector [l] mbeta;
   matrix[l, l] vbeta;
@@ -51,8 +54,15 @@ data {
   real eta;
 }
 
+transformed data {
+  vector [q-1] mu_mean = rep_vector(mu0, q - 1);
+  vector [q-1] q_ones = rep_vector(1, q - 1);
+  cov_matrix [q-1] mu_cov = smu * (diag_matrix(q_ones) - (q_ones * transpose(q_ones)) / q);
+}
+
+
 parameters {
-  vector <lower=0> [q] mu;
+  vector [q] mu;
   vector <lower=0> [q] delta;
   vector [l] beta;
   real <lower=0> stwo;
@@ -62,13 +72,14 @@ parameters {
 transformed parameters {
   vector [q] fu = designMatrix(l, mu, rbf_variance, ml, q) * beta;
   vector [q] epsilon = log(delta) - fu;
+  real sum_mu = sum(mu[notrefgene]);
 }
-
 
 model {
   stwo ~ inv_gamma(astwo, bstwo);
   beta ~ multi_normal(mbeta, stwo * vbeta);
-  mu ~ normal(mu_mu, smu);
+  mu[notrefgene] ~ multi_normal(mu_mean, mu_cov);
+  mu[refgene] ~ normal((q * mu0) - sum_mu, 0.01);
   lambda ~ gamma(eta / 2, eta / 2);
   delta ~ lognormal(fu, stwo ./ lambda);
   for (j in 1:n) {

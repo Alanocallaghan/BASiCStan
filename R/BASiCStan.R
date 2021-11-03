@@ -29,111 +29,117 @@
 #' BASiCStan(sce, tol_rel_obj = 1e-1)
 #' @export
 BASiCStan <- function(
-    Data,
-    Method = c("vb", "sampling", "optimizing"), 
-    WithSpikes = length(altExpNames(Data)) > 0,
-    BatchInfo = Data$BatchInfo,
-    L = 12,
-    PriorMu = c("EmpiricalBayes", "uninformative"),
-    NormFactorFun = scran::calculateSumFactors,
-    ReturnBASiCS = TRUE,
-    Verbose = TRUE,
-    ...
+      Data,
+      Method = c("vb", "sampling", "optimizing"),
+      WithSpikes = length(altExpNames(Data)) > 0,
+      BatchInfo = Data$BatchInfo,
+      L = 12,
+      PriorMu = c("default", "EmpiricalBayes"),
+      NormFactorFun = scran::calculateSumFactors,
+      ReturnBASiCS = TRUE,
+      Verbose = TRUE,
+      ...
   ) {
 
-  Method <- match.arg(Method)
-  fun <- get(Method, mode = "function")
-  PriorMu <- match.arg(PriorMu)
+    Method <- match.arg(Method)
+    fun <- get(Method, mode = "function")
+    PriorMu <- match.arg(PriorMu)
 
-  mod <- "basics_regression"
+    mod <- "basics_regression"
+    if (!WithSpikes) {
+        mod <- paste(mod, "nospikes", sep = "_")
+    }
+    model <- stanmodels[[mod]]
+    # if (!WithSpikes) {
+    #     stop("Not implemented yet")
+    # }
 
-  if (!WithSpikes) {
-    mod <- paste(mod, "nospikes", sep = "_")
-  }
-  model <- stanmodels[[mod]]
-  # if (!WithSpikes) {
-  #   stop("Not implemented yet")
-  # }
+    if (WithSpikes) {
+        spikes <- assay(altExp(Data))
+        counts <- counts(Data)
+    } else {
+        spikes <- NULL
+        counts <- counts(Data)
+    }
+    if (is.null(BatchInfo) | length(unique(BatchInfo)) == 1) {
+        BatchInfo <- 1
+        batch_design <- matrix(1, nrow = ncol(Data))
+    } else {
+        batch_design <- model.matrix(~0 + factor(BatchInfo))
+    }
 
-  if (WithSpikes) {
-    spikes <- assay(altExp(Data))
-    counts <- counts(Data)
-  } else {
-    spikes <- NULL
-    counts <- counts(Data)
-  }
-  if (is.null(BatchInfo) | length(unique(BatchInfo)) == 1) {
-    BatchInfo <- 1
-    batch_design <- matrix(1, nrow = ncol(Data))
-  } else {
-    batch_design <- model.matrix(~0 + factor(BatchInfo))
-  }
-
-  PP <- BASiCS::BASiCS_PriorParam(
-    Data,
-    PriorMu = "EmpiricalBayes"
-  )
-  start <- BASiCS:::.BASiCS_MCMC_Start(
-    Data,
-    PriorParam = PP,
-    Regression = TRUE,
-    WithSpikes = WithSpikes
-  )
-  if (PriorMu == "EmpiricalBayes") {
-    PP$mu.mu <- BASiCS:::.EmpiricalBayesMu(Data, 0.5, WithSpikes)
-  }
-  Locations <- BASiCS:::.estimateRBFLocations(start$mu0, L, RBFMinMax = FALSE)
-  size_factors <- match.fun(NormFactorFun)(Data)
-
-  sdata <- list(
-    q = nrow(counts),
-    n = ncol(counts),
-    p = length(unique(BatchInfo)),
-    counts = as.matrix(counts),
-    batch_design = batch_design,
-    size_factors = size_factors,
-    as = 1,
-    bs = 1,
-    atheta = 1,
-    btheta = 1,
-    mu_mu = PP$mu.mu,
-    smu = sqrt(0.5),
-    sdelta = sqrt(0.5),
-    aphi = rep(1, ncol(counts)),
-    mbeta = rep(0, L),
-    ml = Locations[, 1],
-    l = L,
-    vbeta = diag(L),
-    rbf_variance = 1.2,
-    eta = 5,
-    astwo = 2,
-    bstwo = 2
-  )
-  if (WithSpikes) {
-    sdata <- c(
-      list(
-        sq = nrow(spikes),
-        spikes = spikes,
-        spike_levels = rowData(altExp(Data))[, 2]
-      ),
-      sdata
+    PP <- BASiCS::BASiCS_PriorParam(
+        Data,
+        PriorMu = PriorMu
     )
-  }
-  if (Verbose) {
-      fit <- fun(model, data = sdata, ...)
-  } else {
-      capture.output(fit <- fun(model, data = sdata, ...))
-  }
-  if (ReturnBASiCS) {
-    .stan2basics(
-      fit,
-      gene_names = rownames(counts),
-      cell_names = colnames(counts),
-      size_factors = size_factors
+    start <- BASiCS:::.BASiCS_MCMC_Start(
+        Data,
+        PriorParam = PP,
+        Regression = TRUE,
+        WithSpikes = WithSpikes
     )
-  } else {
-    fit
-  }
+    ## todo: remove ::: calls
+    Locations <- BASiCS:::.estimateRBFLocations(start$mu0, L, RBFMinMax = FALSE)
+    size_factors <- match.fun(NormFactorFun)(Data)
+
+    if (is.null(PP$mu.mu)) {
+        PP$mu.mu <- rep(0, nrow(Data))
+    }
+    x <- rowMeans(log1p(counts(Data)))
+    refgene <- which(rank(x) == floor(length(x) / 2))
+    notrefgene <- setdiff(1:nrow(counts), refgene)
+    sdata <- list(
+        q = nrow(counts),
+        n = ncol(counts),
+        p = length(unique(BatchInfo)),
+        counts = as.matrix(counts),
+        batch_design = batch_design,
+        size_factors = size_factors,
+        as = 1,
+        bs = 1,
+        atheta = 1,
+        btheta = 1,
+        mu_mu = PP$mu.mu,
+        mu0 = median(PP$mu.mu),
+        smu = sqrt(0.5),
+        sdelta = sqrt(0.5),
+        aphi = rep(1, ncol(counts)),
+        mbeta = rep(0, L),
+        refgene = refgene,
+        notrefgene = notrefgene,
+        ml = Locations[, 1],
+        l = L,
+        vbeta = diag(L),
+        rbf_variance = 1.2,
+        eta = 5,
+        astwo = 2,
+        bstwo = 2
+    )
+    if (WithSpikes) {
+        sdata <- c(
+            list(
+                sq = nrow(spikes),
+                spikes = spikes,
+                spike_levels = rowData(altExp(Data))[, 2]
+            ),
+            sdata
+        )
+    }
+    if (Verbose) {
+        fit <- fun(model, data = sdata, ...)
+    } else {
+        capture.output(fit <- fun(model, data = sdata, ...))
+    }
+    if (ReturnBASiCS) {
+        .stan2basics(
+            fit,
+            gene_names = rownames(counts),
+            cell_names = colnames(counts),
+            size_factors = size_factors
+        )
+    } else {
+        fit
+    }
 }
 
 #' Convert stan fits to BASiCS_Chain objects.
