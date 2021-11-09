@@ -66,9 +66,9 @@ parameters {
 }
 
 transformed parameters {
-  vector [n] theta_vector = batch_design * theta;
-  vector [n] phi = tphi * n;
-  vector [q] mu = exp(log_mu);
+  vector <lower=0> [n] theta_vector = batch_design * theta;
+  vector <lower=0> [n] phi = tphi * n;
+  vector <lower=0> [q] mu = exp(log_mu);
   vector [q] fu = designMatrix(l, log_mu, rbf_variance, ml, q) * beta;
   vector [q] epsilon = log(delta) - fu;
 }

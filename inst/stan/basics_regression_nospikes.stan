@@ -32,12 +32,6 @@ data {
   int n;
   int p;
   int<lower=0> counts[q, n];
-  real as;
-  real bs;
-  real atheta;
-  real btheta;
-  matrix [n, p] batch_design;
-  vector [n] aphi;
   vector[q] mu_mu;
   real smu;
   real astwo;
@@ -65,7 +59,7 @@ parameters {
 
 transformed parameters {
   vector [q] fu = designMatrix(l, log_mu, rbf_variance, ml, q) * beta;
-  vector [q] mu = exp(log_mu);
+  vector <lower=0> [q] mu = exp(log_mu);
   vector [q] epsilon = log(delta) - fu;
 }
 
