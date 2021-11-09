@@ -233,7 +233,7 @@ BASiCStan <- function(
     lc <- logcounts(Data)
     gp <- glmGamPoi::glm_gp(Data)
     list(
-        mu = exp(rowMeans(lc)),
+        log_mu = rowMeans(lc) + 1e-2,
         delta = gp$overdispersions + 1e-2,
         epsilon = rep(0, nrow(Data)),
         theta = as.array(rep(1, P)),
@@ -250,8 +250,12 @@ vb <- function(..., tol_rel_obj = 1e-3) {
     rstan::vb(..., tol_rel_obj = tol_rel_obj)
 }
 
-sampling <- function(...) {
-    rstan::sampling(...)
+sampling <- function(..., init, chains = 1) {
+    init <- rep(init, chains)
+    if (chains == 1) {
+        init <- list(init)
+    }
+    rstan::sampling(..., init = init, chains = chains)
 }
 
 optimizing <- function(...) {

@@ -53,7 +53,9 @@ test_that("smoke test", {
 })
 
 set.seed(66)
-mock <- BASiCS::BASiCS_MockSCE(NGenes = 20, NCells = 20, NSpikes = 10)
+mock <- BASiCS::BASiCS_MockSCE(
+    NGenes = 20, NCells = 20, NSpikes = 10, WithBatch = FALSE
+)
 
 test_that("accuracy test", {
     a <- suppressMessages(capture.output(
@@ -62,7 +64,7 @@ test_that("accuracy test", {
         )
     ))
     fit1 <- suppressWarnings(
-        BASiCStan(mock, tol_rel_obj = 1e-3, Verbose = FALSE)
+        x <- BASiCStan(mock, tol_rel_obj = 1e-3, Verbose = TRUE)
     )
     fit2 <- suppressWarnings(
         BASiCStan(mock, WithSpikes = FALSE, tol_rel_obj = 1e-3, Verbose = FALSE)
