@@ -71,7 +71,7 @@ model {
   delta ~ lognormal(fu, stwo ./ sqrt(lambda));
   for (j in 1:n) {
     counts[, j] ~ neg_binomial_2_log(
-      log_size_factors[j] + mu,
+      log_size_factors[j] + log_mu,
       1 ./ delta
     );
   }
