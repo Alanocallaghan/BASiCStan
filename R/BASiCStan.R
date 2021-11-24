@@ -40,8 +40,6 @@
 #' ## uses fixed scaling normalisation factors
 #' fit_nospikes <- BASiCStan(sce, WithSpikes = FALSE)
 #'
-#' @importFrom BASiCS BASiCS_PriorParam
-#' @importFrom utils capture.output
 #' @export
 BASiCStan <- function(
     Data,
