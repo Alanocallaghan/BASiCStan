@@ -22,7 +22,8 @@ Description:
     inference engines in the Stan programming language.
     BASiCS is a Bayesian hierarchical model that uses an adaptive Metropolis
     within Gibbs sampling scheme. Alternative inference methods provided by
-    Stan have been seen to be preferable in some situations.
+    Stan may be preferable in some situations, for example for particularly
+    large data or posterior distributions with difficult geometries.
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
