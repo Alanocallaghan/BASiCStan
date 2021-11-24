@@ -64,7 +64,7 @@ test_that("accuracy test", {
         )
     ))
     fit1 <- suppressWarnings(
-        x <- BASiCStan(mock, tol_rel_obj = 1e-3, Verbose = TRUE)
+        x <- BASiCStan(mock, tol_rel_obj = 1e-3, Verbose = FALSE)
     )
     fit2 <- suppressWarnings(
         BASiCStan(mock, WithSpikes = FALSE, tol_rel_obj = 1e-3, Verbose = FALSE)
@@ -101,7 +101,7 @@ test_that("accuracy test", {
             colMedians(fit2@parameters$delta),
             use = "complete.obs"
         ),
-        0.7
+        0.65
     )
     expect_gt(
         cor(
