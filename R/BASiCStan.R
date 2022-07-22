@@ -192,6 +192,7 @@ Stan2BASiCS <- function(
         theta = xe[["theta"]]
     )
     if (is.null(parameters$nu)) {
+        browser()
         parameters$nu <- t(replicate(nrow(parameters$mu), size_factors))
         parameters$theta <- matrix(1, nrow = nrow(parameters$mu), ncol = 1)
         parameters$s <- parameters$nu

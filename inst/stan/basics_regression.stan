@@ -3,13 +3,13 @@ functions {
       int l,
       vector log_mu,
       real rbf_variance,
-      vector ml,
+      vector locations,
       int q
     ) {
 
     real h;
     matrix [q, l] X;
-    h = (ml[2] - ml[1]) * rbf_variance;
+    h = (locations[2] - locations[1]) * rbf_variance;
     for (i in 1:q) {
       for (j in 1:l) {
         X[i, j] = 1;
@@ -19,7 +19,7 @@ functions {
     for (i in 1:(l - 2)) {
       vector[q] tmp;
       for (j in 1:q) {
-        tmp[j] = pow(log_mu[j] - ml[i], 2);
+        tmp[j] = pow(log_mu[j] - locations[i], 2);
       }
       X[, i + 2] = exp(-0.5 * tmp / pow(h, 2));
     }
@@ -48,7 +48,7 @@ data {
   vector [l] mbeta;
   matrix[l, l] vbeta;
   real rbf_variance;
-  vector[l - 2] ml;
+  vector[l - 2] locations;
   real eta;
   vector [sq] spike_levels;
 }
@@ -69,7 +69,7 @@ transformed parameters {
   vector <lower=0> [n] theta_vector = batch_design * theta;
   vector <lower=0> [n] phi = tphi * n;
   vector <lower=0> [q] mu = exp(log_mu);
-  vector [q] fu = designMatrix(l, log_mu, rbf_variance, ml, q) * beta;
+  vector [q] fu = designMatrix(l, log_mu, rbf_variance, locations, q) * beta;
   vector [q] epsilon = log(delta) - fu;
 }
 

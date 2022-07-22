@@ -6,7 +6,7 @@
 \usage{
 BASiCStan(
   Data,
-  Method = c("vb", "sampling", "optimizing"),
+  Method = c("vb", "sampling", "optimizing", "pathfinder", "pathfinder_parallel"),
   WithSpikes = length(altExpNames(Data)) > 0,
   Regression = TRUE,
   BatchInfo = Data$BatchInfo,

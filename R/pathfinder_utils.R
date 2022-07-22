@@ -55,29 +55,33 @@ to_posterior <- function(model, data) {
 }
 
 
+#' Run one-path Pathfinder for initialization init 
+#' 
+#' @param init        initial parameter values
+#' @param fn          negative of log-density 
+#' @param gr          gradient function of negative log-density 
+#' @param init_bound  the boundwith of random initials for each dimension (default = 2.0)
+#' @param N1          maxium number of iterations for L-BFGS (default = 1000)
+#' @param N_sam_DIV   number of samples used in estimating ELBO (default = 5)
+#' @param N_sam       number of samples from the approximating Normal returned
+#'                    will not do extra samples when < N_sam_DIV  (default = 5)
+#' @param factr_tol   the option factr in optim() (default = 1e2)
+#' @param lmm         the option lmm in optim() (default = 6)
+#' @param seed        random seed for one-path Pathfinder
+#' @param eval_lp_draws logical; if TRUE (default) evaluate the log-densities of approximating draws
+#' @return a list with named elements:
+#' \code{sample_pkg_save}: matrics for estiamted inv Hessian 
+#' \code{DIV_save}: approximating draws and DIV
+#' \code{y}: optimization path
+#' \code{fn_call}: no. calls of log density
+#' \code{gr_call}: no. calls of gradient
+#' status    
 opt_path <- function(init, fn, gr, 
                      init_bound = 2.0,
                      N1 = 1000,
                      N_sam_DIV = 5, N_sam = 100,
                      factr_tol = 1e2, lmm = 6, seed = 1234,
                      eval_lp_draws = TRUE) {
-  
-  #' Run one-path Pathfinder for initialization init 
-  #' 
-  #' @param init        initial parameter values
-  #' @param fn          negative of log-density 
-  #' @param gr          gradient function of negative log-density 
-  #' @param init_bound  the boundwith of random initials for each dimension (default = 2.0)
-  #' @param N1          maxium number of iterations for L-BFGS (default = 1000)
-  #' @param N_sam_DIV   number of samples used in estimating ELBO (default = 5)
-  #' @param N_sam       number of samples from the approximating Normal returned
-  #'                    will not do extra samples when < N_sam_DIV  (default = 5)
-  #' @param factr_tol   the option factr in optim() (default = 1e2)
-  #' @param lmm         the option lmm in optim() (default = 6)
-  #' @param seed        random seed for one-path Pathfinder
-  #' @param eval_lp_draws logical; if TRUE (default) evaluate the log-densities of approximating draws
-  #' @return 
-  
   
   set.seed(seed)
   D <- length(init)
@@ -255,28 +259,33 @@ opt_path <- function(init, fn, gr,
 }
 
 
+#' Run one-path Pathfinder for specified Stan model and data for
+#' the specified number of iterations using the specified bound on
+#' uniform initialization on the unconstrained scale.  See opt_path()
+#' for a description of output format and algorithm.
+#'
+#' @param model          Stan model (compiled using rstan::stan_model())
+#' @param data           data list for call to rstan::sampling for specified model
+#' @param init_bound     the boundwith of random initials for each dimension (default = 2.0)
+#' @param N1             maxium number of iterations for L-BFGS (default = 1000)
+#' @param N_sam_DIV      number of samples used in estimating ELBO (default = 5)
+#' @param N_sam          number of samples from the approximating Normal returned
+#'                       will not do extra samples when < N_sam_DIV  (default = 5)
+#' @param factr_tol      the option factr in optim() (default = 1e2)
+#' @param lmm            the option lmm in optim() (default = 6)
+#' @param seed           random seed for generating initials
+#' @param eval_lp_draws  logical; if TRUE (default) evaluate the log-densities of approximating draws
+#' @return a list with named elements:
+#' \code{sample_pkg_save}: matrics for estiamted inv Hessian 
+#' \code{DIV_save}: approximating draws and DIV
+#' \code{y}: optimization path
+#' \code{fn_call}: no. calls of log density
+#' \code{gr_call}: no. calls of gradient
+#' status     
 opt_path_stan <- function(model, data, init_bound = 2, N1 = 1000,
                           N_sam_DIV = 5, N_sam = 100,
                           factr_tol = 1e2, lmm = 6, seed = 1234,
                           eval_lp_draws = TRUE){
-  
-  #' Run one-path Pathfinder for specified Stan model and data for
-  #' the specified number of iterations using the specified bound on
-  #' uniform initialization on the unconstrained scale.  See opt_path()
-  #' for a description of output format and algorithm.
-  #'
-  #' @param model          Stan model (compiled using rstan::stan_model())
-  #' @param data           data list for call to rstan::sampling for specified model
-  #' @param init_bound     the boundwith of random initials for each dimension (default = 2.0)
-  #' @param N1             maxium number of iterations for L-BFGS (default = 1000)
-  #' @param N_sam_DIV      number of samples used in estimating ELBO (default = 5)
-  #' @param N_sam          number of samples from the approximating Normal returned
-  #'                       will not do extra samples when < N_sam_DIV  (default = 5)
-  #' @param factr_tol      the option factr in optim() (default = 1e2)
-  #' @param lmm            the option lmm in optim() (default = 6)
-  #' @param seed           random seed for generating initials
-  #' @param eval_lp_draws  logical; if TRUE (default) evaluate the log-densities of approximating draws
-  #' @return 
   
   posterior <- to_posterior(model, data)
   D <- get_num_upars(posterior)
@@ -295,28 +304,28 @@ opt_path_stan <- function(model, data, init_bound = 2, N1 = 1000,
 }
 
 
+#' Run one-path Pathfinder with random initials in parallel
+#'
+#' @param seed_init      array of random seeds for generating random initials
+#' @param seed_list      array of random seeds for running one-path Pathfinders
+#' @param mc.cores       The maximum number of one-path Pathfinder to run in parallel 
+#' @param model          Stan model (compiled using rstan::stan_model())
+#' @param data           data list for call to rstan::sampling for specified model
+#' @param init_bound     the boundwith of random initials for each dimension (default = 2.0)
+#' @param N1             maxium number of iterations for L-BFGS (default = 1000)
+#' @param N_sam_DIV      number of samples used in estimating ELBO (default = 5)
+#' @param N_sam          number of samples from the approximating Normal returned
+#'                       will not do extra samples when < N_sam_DIV  (default = 5)
+#' @param factr_tol      the option factr in optim() (default = 1e2)
+#' @param lmm            the option lmm in optim() (default = 6)
+#' @param eval_lp_draws  logical; if TRUE (default) evaluate the log-densities of approximating draws
+#' @return A list of outputs from \code{\link{opt_path}}
 opt_path_stan_parallel <- function(seed_init, seed_list, mc.cores, model, data, 
                                    init_bound = 2.0, N1 = 1000, 
                                    N_sam_DIV = 5, N_sam = 100, 
                                    factr_tol = 1e2, lmm = 6,
                                    eval_lp_draws = TRUE){
   
-  #' Run one-path Pathfinder with random initials in parallel
-  #'
-  #' @param seed_init      array of random seeds for generating random initials
-  #' @param seed_list      array of random seeds for running one-path Pathfinders
-  #' @param mc.cores       The maximum number of one-path Pathfinder to run in parallel 
-  #' @param model          Stan model (compiled using rstan::stan_model())
-  #' @param data           data list for call to rstan::sampling for specified model
-  #' @param init_bound     the boundwith of random initials for each dimension (default = 2.0)
-  #' @param N1             maxium number of iterations for L-BFGS (default = 1000)
-  #' @param N_sam_DIV      number of samples used in estimating ELBO (default = 5)
-  #' @param N_sam          number of samples from the approximating Normal returned
-  #'                       will not do extra samples when < N_sam_DIV  (default = 5)
-  #' @param factr_tol      the option factr in optim() (default = 1e2)
-  #' @param lmm            the option lmm in optim() (default = 6)
-  #' @param eval_lp_draws  logical; if TRUE (default) evaluate the log-densities of approximating draws
-  #' @return 
   
   posterior <- to_posterior(model, data)
   D <- get_num_upars(posterior)
@@ -341,28 +350,28 @@ opt_path_stan_parallel <- function(seed_init, seed_list, mc.cores, model, data,
   }, mc.cores = mc.cores)
 }
 
+#' Run one-path Pathfinder with a given list of initials in parallel
+#'
+#' @param init_ls        the list of initials 
+#' @param mc.cores       The maximum number of one-path Pathfinder to run in parallel 
+#' @param model          Stan model (compiled using rstan::stan_model())
+#' @param data           data list for call to rstan::sampling for specified model
+#' @param init_bound     the boundwith of random initials for each dimension (default = 2.0)
+#' @param N1             maxium number of iterations for L-BFGS (default = 1000)
+#' @param N_sam_DIV      number of samples used in estimating ELBO (default = 5)
+#' @param N_sam          number of samples from the approximating Normal returned
+#'                       will not do extra samples when < N_sam_DIV  (default = 5)
+#' @param factr_tol      the option factr in optim() (default = 1e2)
+#' @param lmm            the option lmm in optim() (default = 6)
+#' @param seed_list      array of random seeds for running one-path Pathfinder
+#' @param eval_lp_draws  logical; if TRUE (default) evaluate the log-densities of approximating draws
+#' @return A list of outputs from \code{\link{opt_path}}
 opt_path_stan_init_parallel <- function(init_ls, mc.cores, model, data, 
                                         init_bound = 2.0, N1 = 1000, 
                                         N_sam_DIV = 5, N_sam = 100, 
                                         factr_tol = 1e2, lmm = 6,
                                         seed_list, eval_lp_draws = TRUE){
   
-  #' Run one-path Pathfinder with a given list of initials in parallel
-  #'
-  #' @param init_ls        the list of initials 
-  #' @param mc.cores       The maximum number of one-path Pathfinder to run in parallel 
-  #' @param model          Stan model (compiled using rstan::stan_model())
-  #' @param data           data list for call to rstan::sampling for specified model
-  #' @param init_bound     the boundwith of random initials for each dimension (default = 2.0)
-  #' @param N1             maxium number of iterations for L-BFGS (default = 1000)
-  #' @param N_sam_DIV      number of samples used in estimating ELBO (default = 5)
-  #' @param N_sam          number of samples from the approximating Normal returned
-  #'                       will not do extra samples when < N_sam_DIV  (default = 5)
-  #' @param factr_tol      the option factr in optim() (default = 1e2)
-  #' @param lmm            the option lmm in optim() (default = 6)
-  #' @param seed_list      array of random seeds for running one-path Pathfinder
-  #' @param eval_lp_draws  logical; if TRUE (default) evaluate the log-densities of approximating draws
-  #' @return 
   
   posterior <- to_posterior(model, data)
   D <- get_num_upars(posterior)
@@ -383,15 +392,15 @@ opt_path_stan_init_parallel <- function(init_ls, mc.cores, model, data,
   }, mc.cores = mc.cores)
 }
 
+#' check whether the updates of the optimization path should be used in the 
+#' inverse Hessian estimation or not
+#' 
+#' @param Yk       update in parameters 
+#' @param Skt      update in gradient 
+#' 
+#' @return A logical value
 check_cond <- function(Yk, Sk){
   
-  #' check whether the updates of the optimization path should be used in the 
-  #' inverse Hessian estimation or not
-  #' 
-  #' @param Yk       update in parameters 
-  #' @param Skt      update in gradient 
-  #' 
-  #' @return 
   
   Dk = sum(Yk * Sk)
   if(Dk == 0){
@@ -406,15 +415,15 @@ check_cond <- function(Yk, Sk){
   }
 }
 
+#' Form the initial diagonal inverse Hessian in the L-BFGS update 
+#' 
+#' @param E0       initial diagonal inverse Hessian before updated
+#' @param Yk       update in parameters 
+#' @param Skt      update in gradient 
+#' 
+#' @return The diagonal inverse Hessian.
 Form_init_Diag <- function(E0, Yk, Sk){
   
-  #' Form the initial diagonal inverse Hessian in the L-BFGS update 
-  #' 
-  #' @param E0       initial diagonal inverse Hessian before updated
-  #' @param Yk       update in parameters 
-  #' @param Skt      update in gradient 
-  #' 
-  #' @return 
   
   Dk = sum(Yk * Sk)
   thetak = sum(Yk^2) / Dk   
@@ -423,15 +432,15 @@ Form_init_Diag <- function(E0, Yk, Sk){
   return(E)
 }
 
+#' update the matrix for storing history of updates along optimization opath
+#' 
+#' @param Ykt_h    history of updates 
+#' @param Ykt      latest update 
+#' @param lmm      The size of history
+#' 
+#' @return The updated matrix
 updateYS <- function(Ykt_h, Ykt, lmm){
   
-  #' update the matrix for storing history of updates along optimization opath
-  #' 
-  #' @param Ykt_h    history of updates 
-  #' @param Ykt      latest update 
-  #' @param lmm      The size of history
-  #' 
-  #' @return
   
   if(is.null(Ykt_h)){
     Ykt_h <- matrix(Ykt, nrow = 1)
@@ -443,19 +452,27 @@ updateYS <- function(Ykt_h, Ykt, lmm){
   return(Ykt_h)
 }
 
+#' Returns sampling metrics of the approximating Gaussian given the history
+#' of optimization trajectory
+#'
+#' @param x_l      The point up to which the optimization path is used for approximation
+#' @param g_l      The gradient at x_l
+#' @param Ykt_h    history of updates along optimization trajectory
+#' @param Skt_h    history of updates of gradients along optimization trajectory
+#' @param E        initial diagonal inverse Hessian
+#' @param lmm      The size of history
+#'
+#' @return A list with named elements:
+#' \code{label}
+#' \code{theta_D}
+#' \code{Qk}
+#' \code{Rktilde}
+#' \code{logdetcholHk}
+#' \code{Mkbar}
+#' \code{Wkbart}
+#' \code{x_center}
 Form_N_apx_taylor <- function(x_l, g_l, Ykt_h, Skt_h, E, lmm){
 
-  #' Returns sampling metrics of the approximating Gaussian given the history
-  #' of optimization trajectory
-  #'
-  #' @param x_l      The point up to which the optimization path is used for approximation
-  #' @param g_l      The gradient at x_l
-  #' @param Ykt_h    history of updates along optimization trajectory
-  #' @param Skt_h    history of updates of gradients along optimization trajectory
-  #' @param E        initial diagonal inverse Hessian
-  #' @param lmm      The size of history
-  #'
-  #' @return
 
   D = length(x_l)
   if(is.null(Ykt_h)){# cannot approximate Hessian
@@ -528,17 +545,22 @@ Form_N_apx_taylor <- function(x_l, g_l, Ykt_h, Skt_h, E, lmm){
   return(sample_pkg)
 }
 
+#' estimate divergence based on Monte Carlo samples given the output of 
+#' subroutine Form_N_apx
+#' 
+#' @param sample_pkg  The output of subroutine Form_N_apx
+#' @param N_sam       number of samples used in estimating divergence
+#' @param fn          negative of log density
+#' @param label       type of divergence, (default = "ELBO")
+#' 
+#' @return A named list with elements:
+#' \code{DIV}
+#' \code{repeat_draws}
+#' \code{fn_draws}
+#' \code{lp_approx_draws}
+#' \code{fn_calls_DIV}
 est_DIV <- function(sample_pkg, N_sam, fn, label = "ELBO"){
   
-  #' estimate divergence based on Monte Carlo samples given the output of 
-  #' subroutine Form_N_apx
-  #' 
-  #' @param sample_pkg  The output of subroutine Form_N_apx
-  #' @param N_sam       number of samples used in estimating divergence
-  #' @param fn          negative of log density
-  #' @param label       type of divergence, (default = "ELBO")
-  #' 
-  #' @return 
   
   D <- length(sample_pkg$x_center)
   fn_draws <-  rep(Inf, N_sam)
@@ -606,18 +628,18 @@ est_DIV <- function(sample_pkg, N_sam, fn, label = "ELBO"){
               lp_approx_draws = lp_approx_draws, fn_calls_DIV = fn_calls_DIV))
 }
 
+#' Generate N_sam samples from the approximating Normal given the output of 
+#' subroutine Form_N_apx
+#' 
+#' @param sample_pkg The output of subroutine Form_N_apx
+#' @param N_sam      Number of samples 
+#' 
+#' @return \item{samples}{The samples from the approximating Normal, 
+#'   each column stores a sample} 
+#'   \item{lp_approx_draws}{The log-density of generated samples under 
+#'   approximating Normal} 
 Sam_N_apx <- function(sample_pkg, N_sam){
   
-  #' Generate N_sam samples from the approximating Normal given the output of 
-  #' subroutine Form_N_apx
-  #' 
-  #' @param sample_pkg The output of subroutine Form_N_apx
-  #' @param N_sam      Number of samples 
-  #' 
-  #' @return \item{samples}{The samples from the approximating Normal, 
-  #'   each column stores a sample} 
-  #'   \item{lp_approx_draws}{The log-density of generated samples under 
-  #'   approximating Normal} 
   
   
   D <- length(sample_pkg$x_center)
@@ -642,14 +664,14 @@ Sam_N_apx <- function(sample_pkg, N_sam){
 }
 
 
+#' Return optimization path with last column (objective function value)
+#' removed.
+#'
+#' @param path   optimization path with last column for objective
+#'               function value
+#' @return Optimization path with last column removed.
 params_only <- function(path) {
   
-  #' Return optimization path with last column (objective function value)
-  #' removed.
-  #'
-  #' @param path   optimization path with last column for objective
-  #'               function value
-  #' @return
   
   N <- dim(path)[1]
   D <- dim(path)[2]
@@ -930,18 +952,26 @@ get_opt_tr <- function(opath){
 }
 
 
+#' Returns sampling metrics of the approximating Gaussian given the history
+#' of optimization trajectory
+#'
+#' @param x_center The center of the approximating Gaussian
+#' @param Ykt_h    history of updates along optimization trajectory
+#' @param Skt_h    history of updates of gradients along optimization trajectory
+#' @param E        initial diagonal inverse Hessian
+#' @param lmm      The size of history
+#'
+#' @return A named list with elements:
+#' \code{label},
+#' \code{theta_D},
+#' \code{Qk},
+#' \code{Rktilde},
+#' \code{logdetcholHk},
+#' \code{Mkbar},
+#' \code{Wkbart},
+#' \code{x_center}.
 Form_N_apx <- function(x_center, Ykt_h, Skt_h, E, lmm){
 
-  #' Returns sampling metrics of the approximating Gaussian given the history
-  #' of optimization trajectory
-  #'
-  #' @param x_center The center of the approximating Gaussian
-  #' @param Ykt_h    history of updates along optimization trajectory
-  #' @param Skt_h    history of updates of gradients along optimization trajectory
-  #' @param E        initial diagonal inverse Hessian
-  #' @param lmm      The size of history
-  #'
-  #' @return
 
   D = length(x_center)
   if(is.null(Ykt_h)){# cannot approximate Hessian

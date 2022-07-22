@@ -1,6 +1,5 @@
 set.seed(31)
 mock <- BASiCS::BASiCS_MockSCE(NGenes = 20, NCells = 20, NSpikes = 10)
-mock <- BASiCS::BASiCS_MockSCE(NGenes = 5, NCells = 5, NSpikes = 5)
 
 test_that("smoke test", {
     expect_s4_class(
