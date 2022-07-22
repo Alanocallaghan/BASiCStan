@@ -44,7 +44,7 @@
 #' @export
 BASiCStan <- function(
     Data,
-    Method = c("vb", "sampling", "optimizing"),
+    Method = c("vb", "sampling", "optimizing", "pathfinder", "pathfinder_parallel"),
     WithSpikes = length(altExpNames(Data)) > 0,
     Regression = TRUE,
     BatchInfo = Data$BatchInfo,
@@ -119,7 +119,7 @@ BASiCStan <- function(
         sdelta = sqrt(0.5),
         aphi = rep(1, ncol(counts)),
         mbeta = rep(0, L),
-        ml = Locations[, 1],
+        locations = Locations[, 1],
         l = L,
         vbeta = diag(L),
         rbf_variance = 1.2,
@@ -137,23 +137,15 @@ BASiCStan <- function(
             sdata
         )
     }
-    if (Verbose) {
+    capture.output(
         fit <- fun(
             model,
             data = sdata,
             init = .init(Data, L, length(unique(BatchInfo)), size_factors),
             ...
-        )
-    } else {
-        capture.output(
-            fit <- fun(
-                model,
-                data = sdata,
-                init = .init(Data, L, length(unique(BatchInfo)), size_factors),
-                ...
-            )
-        )
-    }
+        ),
+        split = !Verbose
+    )
     if (ReturnBASiCS) {
         Stan2BASiCS(
             fit,
@@ -293,6 +285,27 @@ extract.list <- function(fit) {
             array(
                 fit$par[ind],
                 dim = c(1, apply(d, 2, max))
+            )
+        }
+    )
+    setNames(out, unique(pars))
+}
+#' @export
+extract.matrix <- function(fit) {
+    pars <- gsub("\\[(\\d+,)*\\d+\\]", "", colnames(fit))
+    dims <- gsub("^[a-z0_]+\\[(.*)\\]", "\\1", colnames(fit))
+    out <- lapply(unique(pars),
+        function(p) {
+            ind <- pars == p
+            if (!all(grepl("[", colnames(fit)[ind], fixed = TRUE))) {
+                return(matrix(fit[, ind], ncol = 1))
+            }
+            l <- strsplit(dims[ind], ",")
+            d <- do.call(rbind, l)
+            d <- matrix(as.numeric(d), ncol = ncol(d))
+            array(
+                fit[, ind],
+                dim = c(nrow(fit), apply(d, 2, max))
             )
         }
     )

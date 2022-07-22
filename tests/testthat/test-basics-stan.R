@@ -1,5 +1,6 @@
 set.seed(31)
 mock <- BASiCS::BASiCS_MockSCE(NGenes = 20, NCells = 20, NSpikes = 10)
+mock <- BASiCS::BASiCS_MockSCE(NGenes = 5, NCells = 5, NSpikes = 5)
 
 test_that("smoke test", {
     expect_s4_class(
@@ -49,7 +50,26 @@ test_that("smoke test", {
         ),
         "BASiCS_Chain"
     )
-
+    expect_s4_class(
+        suppressWarnings(
+            BASiCStan(
+                mock,
+                WithSpikes = FALSE, Method = "pathfinder",
+                iter = 200, chains = 1, Verbose = FALSE
+            )
+        ),
+        "BASiCS_Chain"
+    )
+    expect_s4_class(
+        suppressWarnings(
+            BASiCStan(
+                mock,
+                WithSpikes = FALSE, Method = "pathfinder_parallel",
+                iter = 200, chains = 1, Verbose = FALSE
+            )
+        ),
+        "BASiCS_Chain"
+    )
 })
 
 set.seed(66)
