@@ -45,7 +45,7 @@ pathfinder_parallel <- function(
     draws <- Imp_Resam_WR(fits, n_sam = 1000)
     draws <- t(draws)
     colnames(draws) <- params
-    draws
+    .calc_generated(draws)
 }
 
 printf <- function(msg, ...) cat(sprintf(msg, ...), "\n")
