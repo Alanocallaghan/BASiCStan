@@ -1,7 +1,6 @@
 #' Thin wrapper for BASiCS models in \linkS4class{stanfit} form before conversion.
 #' 
 #' @slot FeatureNames,ObservationNames The feature (gene) and observation (cell) names of the data used to fit the model.
-#' @slot SizeFactors Size factors for each cell in the original dataset.
 setClass(
     "BASiCStan",
     representation = list(
