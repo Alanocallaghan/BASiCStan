@@ -5,7 +5,8 @@ setClass(
     "BASiCStan",
     representation = list(
         FeatureNames = "character", 
-        ObservationNames = "character"
+        ObservationNames = "character",
+        SizeFactors = "numeric"
     ),
     contains = "stanfit",
     validity = function(object) {
@@ -14,6 +15,12 @@ setClass(
         }
         if (length(sampleNames(object)) != ncells(object)) {
             stop("CellNames vector isn't the right length")
+        }
+        if (!all(sizeFactors(object) > 0)) {
+            stop("SizeFactors should be > 0")
+        }
+        if (length(sizeFactors(object)) != ncells(object)) {
+            stop("length(SizeFactors) should match the number of cells")
         }
         TRUE
     }
@@ -38,7 +45,11 @@ nfeats <- function(x) {
 
 ncells <- function(x) {
     nom <- names(x)
-    length(grep("nu", nom))
+    if (any(grepl("nu", nom))) {
+        length(grep("nu", nom))
+    } else {
+        length(sizeFactors(x))
+    }
 }
 
 #' Feature and sample names for \linkS4class{BASiCStan} objects.
@@ -50,18 +61,22 @@ ncells <- function(x) {
 #' For the getters, a character vector.
 #' For the setters, an object of class \linkS4class{BASiCStan}.
 #' @importFrom Biobase featureNames sampleNames featureNames<- sampleNames<-
-#' @rdname sample-features
+#' @importFrom BiocGenerics sizeFactors
+#' @rdname sample-features-sizefactors
 #' @export
 setMethod("featureNames", "BASiCStan", fnames)
-#' @rdname sample-features
+#' @rdname sample-features-sizefactors
 #' @export
 setMethod("sampleNames", "BASiCStan", cnames)
-#' @rdname sample-features
+#' @rdname sample-features-sizefactors
 #' @export
 setMethod("featureNames<-", signature("BASiCStan", "ANY"), setfnames)
-#' @rdname sample-features
+#' @rdname sample-features-sizefactors
 #' @export
 setMethod("sampleNames<-", signature("BASiCStan", "ANY"), setcnames)
+#' @rdname sample-features-sizefactors
+#' @export
+setMethod("sizeFactors", signature("BASiCStan"), function(object) object@SizeFactors)
 
 # #' @export
 # setMethod("nrow", "BASiCStan", nfeats)

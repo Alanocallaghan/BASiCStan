@@ -5,6 +5,7 @@
 \alias{sampleNames,BASiCStan-method}
 \alias{featureNames<-,BASiCStan-method}
 \alias{sampleNames<-,BASiCStan,ANY-method}
+\alias{sizeFactors,BASiCStan-method}
 \title{Feature and sample names for \linkS4class{BASiCStan} objects.}
 \usage{
 \S4method{featureNames}{BASiCStan}(object)
@@ -14,6 +15,8 @@
 \S4method{featureNames}{BASiCStan}(object) <- value
 
 \S4method{sampleNames}{BASiCStan,ANY}(object) <- value
+
+\S4method{sizeFactors}{BASiCStan}(object)
 }
 \arguments{
 \item{object}{An object of class \linkS4class{BASiCStan}.}

@@ -155,19 +155,21 @@ BASiCStan <- function(
             )
         )
     }
-    attr(fit, "gene_names") <- rownames(counts)
-    attr(fit, "cell_names") <- colnames(counts)
-    attr(fit, "size_factors") <- size_factors
+    fit <- new("BASiCStan",
+        fit,
+        FeatureNames = rownames(Data),
+        ObservationNames = colnames(Data),
+        SizeFactors = size_factors
+    )
     if (ReturnBASiCS) {
-        Stan2BASiCS(fit)
-    } else {
-        new("BASiCStan", fit, FeatureNames = rownames(Data), ObservationNames = colnames(Data))
+        fit <- Stan2BASiCS(fit)
     }
+    fit
 }
 
 #' Convert Stan fits to \code{\linkS4class{BASiCS_Chain}} objects.
 #'
-#' @param x A stan object
+#' @param x A \code{linkS4class{BASiCStan}} object.
 #' @param gene_names,cell_names Gene and cell names. The reason this argument
 #' exists is that by default, stan fit parameters are not named.
 #' NOTE: this must be the same order as the
@@ -186,10 +188,11 @@ BASiCStan <- function(
 #' @export
 Stan2BASiCS <- function(
     x,
-    gene_names = attr(x, "gene_names"),
-    cell_names = attr(x, "cell_names"),
-    size_factors = attr(x, "size_factors")) {
-
+    gene_names = featureNames(x),
+    cell_names = sampleNames(x),
+    size_factors = sizeFactors(x)) {
+    
+    stopifnot(is(x, "BASiCStan"))
     xe <- extract(x)
     parameters <- list(
         mu = xe[["mu"]],
@@ -232,7 +235,6 @@ Stan2BASiCS <- function(
             parameters[[x]]
         }
     )
-
     new("BASiCS_Chain", parameters = parameters)
 }
 

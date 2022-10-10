@@ -6,13 +6,13 @@
 \usage{
 Stan2BASiCS(
   x,
-  gene_names = attr(x, "gene_names"),
-  cell_names = attr(x, "cell_names"),
-  size_factors = attr(x, "size_factors")
+  gene_names = featureNames(x),
+  cell_names = sampleNames(x),
+  size_factors = sizeFactors(x)
 )
 }
 \arguments{
-\item{x}{A stan object}
+\item{x}{A \code{linkS4class{BASiCStan}} object.}
 
 \item{gene_names, cell_names}{Gene and cell names. The reason this argument
 exists is that by default, stan fit parameters are not named.
