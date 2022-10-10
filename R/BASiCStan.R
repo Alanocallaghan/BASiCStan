@@ -57,8 +57,6 @@ BASiCStan <- function(
   ) {
 
     stopifnot(inherits(Data, "SingleCellExperiment"))
-    stopifnot(is.character(colnames(Data)))
-    stopifnot(is.character(rownames(Data)))
     
     if (!Regression) {
         stop("Only Regression=TRUE is supported.")
